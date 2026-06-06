@@ -5,11 +5,14 @@ Diferença do evaluate.py original:
 - Usa langsmith.evaluation.evaluate() em vez de loop manual
 - Os experimentos ficam visíveis no dashboard do LangSmith
 - Cada execução gera um Experiment rastreável com scores por exemplo
+- Gera CSV com métricas + reasonings + resposta gerada por exemplo
 """
 
 import os
 import sys
+import csv
 import json
+from datetime import datetime
 from typing import List, Dict, Any
 from pathlib import Path
 from dotenv import load_dotenv
@@ -85,16 +88,77 @@ def pull_prompt(prompt_name: str) -> ChatPromptTemplate:
         raise
 
 
-def run_evaluation(prompt_name: str, dataset_name: str, client: Client) -> Dict[str, float]:
+def load_metadata_lookup(jsonl_path: str) -> Dict[str, Dict]:
+    lookup = {}
+    try:
+        with open(jsonl_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                record = json.loads(line)
+                bug_report = record.get("inputs", {}).get("bug_report", "")
+                lookup[bug_report] = {
+                    "reference": record.get("outputs", {}).get("reference", ""),
+                    "domain": record.get("metadata", {}).get("domain", ""),
+                    "type": record.get("metadata", {}).get("type", ""),
+                    "complexity": record.get("metadata", {}).get("complexity", ""),
+                }
+    except Exception as e:
+        print(f"   ⚠️  Erro ao carregar metadata do dataset: {e}")
+    return lookup
+
+
+def save_results_csv(records: List[Dict], prompt_name: str) -> str:
+    output_dir = Path("outputs")
+    output_dir.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    prompt_slug = prompt_name.split("/")[-1]
+    csv_path = output_dir / f"eval_{prompt_slug}_{timestamp}.csv"
+
+    fieldnames = [
+        "exemplo",
+        "complexity",
+        "domain",
+        "type",
+        "bug_report",
+        "resposta_esperada",
+        "resposta_gerada",
+        "f1_score",
+        "f1_precision_component",
+        "f1_recall_component",
+        "f1_reasoning",
+        "clarity_score",
+        "clarity_reasoning",
+        "precision_score",
+        "precision_reasoning",
+        "helpfulness",
+        "correctness",
+    ]
+
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+        writer.writeheader()
+        writer.writerows(records)
+
+    print(f"   ✓ CSV salvo em: {csv_path}")
+    return str(csv_path)
+
+
+def run_evaluation(prompt_name: str, dataset_name: str, client: Client, jsonl_path: str = "datasets/bug_to_user_story.jsonl") -> Dict[str, float]:
     print(f"\n🔍 Avaliando: {prompt_name}")
 
     prompt_template = pull_prompt(prompt_name)
     llm = get_llm()
+    metadata_lookup = load_metadata_lookup(jsonl_path)
 
     # Acumuladores para calcular médias ao final
     f1_scores = []
     clarity_scores = []
     precision_scores = []
+    per_example_records = []
+    example_counter = [0]
 
     # Função target: recebe inputs do dataset, retorna a resposta do LLM
     def target(inputs: dict) -> dict:
@@ -127,6 +191,28 @@ def run_evaluation(prompt_name: str, dataset_name: str, client: Client) -> Dict[
         helpfulness = round((clarity["score"] + precision["score"]) / 2, 4)
         correctness = round((f1["score"]      + precision["score"]) / 2, 4)
 
+        example_counter[0] += 1
+        meta = metadata_lookup.get(question, {})
+        per_example_records.append({
+            "exemplo": example_counter[0],
+            "complexity": meta.get("complexity", ""),
+            "domain": meta.get("domain", ""),
+            "type": meta.get("type", ""),
+            "bug_report": question,
+            "resposta_esperada": meta.get("reference", reference),
+            "resposta_gerada": answer,
+            "f1_score": f1["score"],
+            "f1_precision_component": f1.get("precision", ""),
+            "f1_recall_component": f1.get("recall", ""),
+            "f1_reasoning": f1.get("reasoning", ""),
+            "clarity_score": clarity["score"],
+            "clarity_reasoning": clarity.get("reasoning", ""),
+            "precision_score": precision["score"],
+            "precision_reasoning": precision.get("reasoning", ""),
+            "helpfulness": helpfulness,
+            "correctness": correctness,
+        })
+
         return [
             {"key": "f1_score",    "score": f1["score"]},
             {"key": "clarity",     "score": clarity["score"]},
@@ -148,6 +234,8 @@ def run_evaluation(prompt_name: str, dataset_name: str, client: Client) -> Dict[
         client=client,
         max_concurrency=1,
     )
+
+    save_results_csv(per_example_records, prompt_name)
 
     avg_f1        = sum(f1_scores)        / len(f1_scores)        if f1_scores        else 0.0
     avg_clarity   = sum(clarity_scores)   / len(clarity_scores)   if clarity_scores   else 0.0
@@ -229,7 +317,7 @@ def main():
     create_evaluation_dataset(client, dataset_name, jsonl_path)
 
     prompts_to_evaluate = [
-        f"{username}/bug_to_user_story_v11",
+        f"{username}/bug_to_user_story_v2",
     ]
 
     results_summary = []

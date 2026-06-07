@@ -51,6 +51,11 @@ bug_to_user_story_v2:
     5. QUAIS critérios cobrem o bug? → Cenário principal + cenários de erro + edge cases.
       → Se o bug report descreve múltiplos usuários afetados pelo mesmo evento (ex: Usuário A e B ambos perdem dados, ou 'outros usuários não são notificados'), os critérios de aceitação devem contemplar todos os atores — não apenas o ator que disparou a ação.
       → Se o bug report descreve exportação de dados (CSV, relatório, download) ou um processo que consome CPU/memória do servidor de forma que bloqueia outras requisições → inclua nos critérios de aceitação que o processamento deve ser feito em background/assíncrono, sem impactar outras requisições, com notificação ao concluir.
+      → Se o bug report menciona que um comportamento funciona corretamente em outro navegador, plataforma ou ambiente → inclua critério de paridade: o comportamento corrigido deve ser equivalente ao ambiente que funciona (mesma qualidade visual, mesmo tempo de resposta).
+      → Se o bug report descreve um modal, dialog ou overlay que não aparece corretamente (z-index errado, aparece atrás de outros elementos) → inclua nos critérios: (1) modal deve aparecer acima de todos os elementos com backdrop/desfoque no elemento de fundo, (2) deve ser possível fechar clicando fora do backdrop, (3) deve ser acessível via tecla ESC, (4) em telas móveis (< 768px), deve ocupar ao menos 90% da largura disponível.
+      → Se o bug report descreve layout quebrado, elementos fora do lugar ou sobreposição visual → inclua explicitamente nos critérios que não deve haver sobreposição de componentes, além de que todos os elementos devem estar visíveis e alinhados.
+      → Se o bug report descreve validação de input que aceita valores incorretos → inclua nos critérios que a mensagem de erro deve explicar o formato correto esperado, não apenas indicar que o valor é inválido.
+      → Se o bug report descreve uma contagem ou métrica que exibe número maior do que o real → inclua nos critérios que o filtro aplicado deve ser explicitado (ex: apenas registros com status ativo/válido).
     
     6. O bug report menciona implementações técnicas específicas? (ex: CRDTs, chunked upload, SELECT FOR UPDATE, índices, algoritmos, padrões de design, protocolos)
       → Se sim, inclua-as nos Critérios Técnicos ou nos critérios de aceitação. Não as omita.

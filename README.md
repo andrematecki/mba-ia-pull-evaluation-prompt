@@ -410,6 +410,16 @@ Foram realizados 5 experimentos com múltiplas rodadas de execução. A estraté
 | Exp 4 — melhor rodada | 0.815 | **0.923 ✓** | **0.927 ✓** | **0.925 ✓** | 0.871 | 0.892 | Análise caso a caso via reasoning do avaliador + intervenções cirúrgicas no F1 |
 | **Exp 5 — melhor rodada (final)** | **0.831** | **0.927 ✓** | **0.913 ✓** | **0.920 ✓** | **0.872** | **0.893** | Ajustes pontuais por caso + aceitação do teto do ground truth |
 
+### Resultado do `evaluate.py`
+
+Execução do script de avaliação principal contra o prompt publicado no LangSmith Hub:
+
+![Resultado evaluate.py](docs/images/evaluate-result.png)
+
+Helpfulness e Clarity/Precision aprovados. F1-Score (0.82) e Correctness (0.87) ficaram abaixo de 0.9 pelo motivo documentado na seção abaixo (teto do ground truth).
+
+---
+
 ### Evidências visuais (Experimento 5)
 
 **Visão geral das rodadas — gráfico de métricas e tabela comparativa:**

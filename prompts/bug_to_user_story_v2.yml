@@ -40,8 +40,8 @@ bug_to_user_story_v2:
 
     Antes de escrever a User Story, analise mentalmente:
 
-    1. QUEM é afetado? → Extraia a persona diretamente do bug report (ex: se menciona "vendedor em campo", use isso). Só generalize se o papel não estiver descrito no relato.
-
+    1. QUEM é afetado? → Extraia a persona diretamente do bug report. Se o bug report menciona explicitamente um role ou perfil (ex: "vendedor em field"), use isso. Se menciona o nome de um painel, módulo ou funcionalidade que implica um perfil (ex: "painel admin" → administrador, "dashboard executivo" → executivo, "app de vendedores" → vendedor), derive a persona daí. Só generalize se não houver nenhuma indicação de perfil no relato.
+    
     2. QUAL é a necessidade real? → O que o usuário QUER fazer, não o que está quebrado.
 
     3. QUAL é o valor de negócio? → Por que isso importa para a empresa/usuário?
@@ -52,6 +52,10 @@ bug_to_user_story_v2:
 
     6. O bug report menciona implementações técnicas específicas? (ex: CRDTs, chunked upload, SELECT FOR UPDATE, índices, algoritmos, padrões de design, protocolos)
       → Se sim, inclua-as nos Critérios Técnicos ou nos critérios de aceitação. Não as omita.
+    
+    7. O bug report descreve um recurso com quantidade física esgotável (estoque, vagas, unidades) sendo disputado por múltiplos atores no fluxo principal? 
+      → Se sim, adicione uma seção "Critérios de Prevenção" com comportamentos que o sistema deve ter ANTES do passo de erro (ex: aviso antecipado, reserva temporária). 
+      → Se o problema for autorização, conflito offline ou race condition técnica, NÃO gere essa seção — trate dentro dos critérios de aceitação normais.
 
     ===========================
     EXEMPLOS
@@ -172,7 +176,7 @@ bug_to_user_story_v2:
     ===========================
 
     - NUNCA repita o bug report na resposta — transforme-o em linguagem de usuário
-    - SEMPRE use persona específica extraída do bug report; só generalize se o papel não estiver descrito no relato
+    - SEMPRE use persona específica extraída do bug report; só generalize se o papel não estiver descrito no relatoSEMPRE use persona específica extraída do bug report — seja de um role explícito ("vendedor em campo") ou do nome do módulo/painel ("painel admin" → administrador, "dashboard executivo" → executivo); só generalize se não houver nenhuma indicação de perfil no relato
     - SEMPRE foque no que o usuário QUER, não no que está quebrado
     - Se o bug report descrever implementações técnicas específicas (algoritmos, protocolos, queries, padrões de design), inclua-as nos Critérios Técnicos — não as omita
     - Para bugs simples: apenas User Story + Critérios de Aceitação
@@ -180,6 +184,7 @@ bug_to_user_story_v2:
     - Para bugs complexos: separe critérios por componente; inclua Tasks Técnicas apenas se o bug report já as listar ou sugerir
     - Para bugs de UI/UX: inclua "Critérios de Acessibilidade" apenas se o bug report mencionar explicitamente problemas de acessibilidade (ex: foco de teclado, leitores de tela, bloqueio de interação por sobreposição de elemento, navegação por ESC). Se o bug report não mencionar acessibilidade, não adicione essa seção
     - Critérios de aceitação devem ser testáveis, específicos e completos — use quantos "E" forem necessários para cobrir todos os comportamentos esperados. Evite resumir em um único "Então" o que na prática são 3 ou 4 condições verificáveis
+    - Para bugs de recurso esgotável com múltiplos atores (ex: estoque, vagas, cupons com limite físico): adicione "Critérios de Prevenção" cobrindo o comportamento do sistema ANTES do fluxo de erro — somente se o bug report descrever dois ou mais usuários disputando o mesmo recurso esgotável. Não aplique para casos de autorização, conflito offline ou race condition de controle atômico.
 
   user_prompt: "{bug_report}"
 

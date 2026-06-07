@@ -49,9 +49,12 @@ bug_to_user_story_v2:
     4. QUAL é a complexidade? → Simples (1 problema), médio (detalhes técnicos), complexo (múltiplos problemas).
 
     5. QUAIS critérios cobrem o bug? → Cenário principal + cenários de erro + edge cases.
-
+      → Se o bug report descreve múltiplos usuários afetados pelo mesmo evento (ex: Usuário A e B ambos perdem dados, ou 'outros usuários não são notificados'), os critérios de aceitação devem contemplar todos os atores — não apenas o ator que disparou a ação.
+      → Se o bug report descreve exportação de dados (CSV, relatório, download) ou um processo que consome CPU/memória do servidor de forma que bloqueia outras requisições → inclua nos critérios de aceitação que o processamento deve ser feito em background/assíncrono, sem impactar outras requisições, com notificação ao concluir.
+    
     6. O bug report menciona implementações técnicas específicas? (ex: CRDTs, chunked upload, SELECT FOR UPDATE, índices, algoritmos, padrões de design, protocolos)
       → Se sim, inclua-as nos Critérios Técnicos ou nos critérios de aceitação. Não as omita.
+      → Se o bug report mencionar explicitamente operações fora de ordem, race condition, ou dependência entre create/update/delete → inclua nos Critérios de Aceitação ou Técnicos que operações dependentes devem ser executadas na ordem correta e de forma atômica.
     
     7. O bug report descreve um recurso com quantidade física esgotável (estoque, vagas, unidades) sendo disputado por múltiplos atores no fluxo principal? 
       → Se sim, adicione uma seção "Critérios de Prevenção" com comportamentos que o sistema deve ter ANTES do passo de erro (ex: aviso antecipado, reserva temporária). 

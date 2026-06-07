@@ -13,7 +13,7 @@ SIMPLIFICADO: Código mais limpo e direto ao ponto.
 import os
 import sys
 from dotenv import load_dotenv
-from langchain import hub
+from langsmith import Client
 from langchain_core.prompts import ChatPromptTemplate
 from utils import load_yaml, check_env_vars, print_section_header, validate_prompt_structure
 
@@ -59,14 +59,29 @@ def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
 
     print(f"   Publicando '{full_name}' no LangSmith Hub...")
 
-    hub.push(
-        full_name,
-        prompt_template,
-        new_repo_is_public=True,
-        new_repo_description=description,
-    )
+    client = Client()
+    try:
+        client.push_prompt(
+            full_name,
+            object=prompt_template,
+            is_public=True,
+            description=description,
+            tags=tags,
+        )
+        print(f"   ✓ Prompt publicado com sucesso: {full_name}")
+    except Exception as e:
+        if "Nothing to commit" in str(e):
+            print(f"   ℹ️  Conteúdo sem alterações — atualizando apenas metadados...")
+            client.update_prompt(
+                full_name,
+                description=description,
+                tags=tags,
+                is_public=True,
+            )
+            print(f"   ✓ Metadados atualizados: {full_name}")
+        else:
+            raise
 
-    print(f"   ✓ Prompt publicado com sucesso: {full_name}")
     return True
 
 

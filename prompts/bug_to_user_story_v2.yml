@@ -1,6 +1,6 @@
 
 bug_to_user_story_v2:
-  description: "Prompt para converter relatos de bugs em User Stories"
+  description: "Prompt otimizado para converter relatos de bugs em User Stories ágeis com estrutura adaptativa por complexidade (simples/médio/complexo). Técnicas aplicadas: Role Prompting (PM Sênior), Chain of Thought (7 passos de análise), Few-shot Learning (exemplos por nível) e Skeleton of Thought (andaime de seções obrigatórias). Resultado de 5 experimentos com análise caso a caso via LLM-as-Judge reasoning."
   system_prompt: |    
     Você é um Product Manager Sênior especializado em metodologias ágeis, com mais de 10 anos de experiência transformando bugs e problemas técnicos em User Stories claras e acionáveis para times de desenvolvimento.
 
@@ -196,12 +196,64 @@ bug_to_user_story_v2:
 
   user_prompt: "{bug_report}"
 
-  # Metadados
+  # ---------------------------------------------------------------------------
+  # METADADOS
+  # ---------------------------------------------------------------------------
   version: "v2"
   created_at: "2026-06-06"
-  tags: ["bug-analysis", "user-story", "product-management"]
+  tags: ["bug-analysis", "user-story", "product-management", "few-shot", "few-shot-learning", "chain-of-thought", "chain-of-thought-cot", "role-prompting", "skeleton-of-thought", "optimized", "v2", "ChatPromptTemplate"]
 
+  # ---------------------------------------------------------------------------
+  # METODOLOGIA DE OTIMIZAÇÃO
+  #
+  # Foram realizados 5 experimentos com múltiplas rodadas de execução cada um.
+  # A estratégia evoluiu em três fases:
+  #
+  # FASE 1 — Estrutura base (exp 1 e 2)
+  #   A abordagem foi iniciada de forma simples: role prompting, CoT de 5
+  #   passos e 3 exemplos few-shot (um por nível de complexidade). Isso moveu
+  #   a média de 0.80 para 0.87, aprovando Clarity, Precision e Helpfulness em
+  #   uma única iteração. O gargalo que restou foi F1-Score (0.80) puxando
+  #   Correctness para baixo.
+  #
+  # FASE 2 — Aprofundamento cirúrgico guiado por reasoning (exp 3, 4 e 5)
+  #   A partir do exp 3, as alterações passaram a ser guiadas pelo reasoning do
+  #   avaliador LLM-as-Judge extraído para cada um dos 15 exemplos do dataset.
+  #   Cada caso foi analisado individualmente para identificar o que foi omitido
+  #   ou errado antes de qualquer mudança no prompt.
+  #
+  #   Padrão identificado: F1 baixo = recall baixo = detalhes técnicos presentes
+  #   no bug report eram descartados pelo modelo (CRDTs, chunked upload,
+  #   SELECT FOR UPDATE, race condition, etc.). A correção foi tornar o CoT um
+  #   checklist explícito de completude (passo 6) e adicionar bullets de edge
+  #   cases pontuais para padrões recorrentes (modal/overlay, multi-ator,
+  #   exportação assíncrona, etc.).
+  #
+  #   Aprendizado crítico: quanto mais o prompt foi aberto para cobrir recall
+  #   (trazer mais conteúdo), mais a Precision caía — o modelo passou a incluir
+  #   seções e critérios não esperados pelo ground truth. Cada ganho de recall
+  #   custava ruído em Precision. Esse trade-off guiou cada decisão nas últimas
+  #   rodadas: alterar somente o que causava omissão provável e verificar se a
+  #   mudança afetava os casos que já estavam corretos antes de ser aplicada.
+  #
+  # FASE 3 — Aceitação do teto do ground truth
+  #   Após o exp 5, ficou evidente que parte do F1 não era recuperável via
+  #   prompt. O avaliador LLM-as-Judge infere detalhes que não existem no bug
+  #   report de entrada (ex: "log de auditoria é boa prática", "15 minutos de
+  #   reserva temporária", "materialized views"). O modelo não tem base para
+  #   reproduzir essas inferências — elas são conhecimento tácito do avaliador,
+  #   não do input. Esses casos foram aceitos como "teto do ground truth" e
+  #   tentativas de cobri-los foram descartadas, pois qualquer instrução
+  #   adicional apenas adicionava ruído à Precision.
+  #   Por isso o F1 ficou em ~0.84 e não chegou a 0.90.
+  # ---------------------------------------------------------------------------
 
   techniques_applied:
-    - "role-prompting"         # Persona de Product Manager Sênior com 10+ anos de experiência
-    - "few-shot"               # 4 exemplos: simples, médio multi-perfil, médio race condition, complexo completo
+    - name: "role-prompting"
+      why: "Calibra o tom e o foco em valor de negócio em vez de descrição técnica. A persona de PM Sênior força o modelo a escrever do ponto de vista do usuário impactado, não do desenvolvedor que consertará o bug. Surgiu no experimento 1 e foi o principal ganho da v3 (+0.07 na média)."
+    - name: "few-shot"
+      why: "Exemplos por nível de complexidade (simples/médio/complexo) ensinam o modelo o formato esperado por imitação. O experimento 1 mostrou que um único exemplo genérico era insuficiente; três exemplos calibrados por complexidade subiram Clarity e Precision acima de 0.9. O nível de detalhe dos critérios 'E' no exemplo 3 é o principal driver de F1, pois o modelo aprende por mimicry quantos sub-critérios deve gerar."
+    - name: "chain-of-thought"
+      why: "A seção 'RACIOCÍNIO PASSO A PASSO' com 7 perguntas força o modelo a analisar persona, necessidade real, valor de negócio, complexidade e cobertura de edge cases ANTES de escrever a User Story. Sem CoT o modelo pulava direto para o formato e gerava personas genéricas ('usuário') e critérios rasos. No experimento 4 ficou claro que F1 baixo era recall baixo — o modelo esquecia detalhes técnicos do bug report. O CoT explícito com checklist de completude (passo 6) foi a intervenção que mais moveu o F1."
+    - name: "skeleton-of-thought"
+      why: "O prompt define um andaime obrigatório de seções (FORMATO OBRIGATÓRIO → RACIOCÍNIO PASSO A PASSO → EXEMPLOS → REGRAS) que o modelo deve seguir antes de gerar a resposta. Isso elimina variância estrutural entre execuções e garante que cada complexidade de bug produza o conjunto correto de seções. O experimento 2 mostrou que, sem esse andaime, o modelo mesclava seções de complexidades diferentes ou omitia o Contexto Técnico em bugs médios."

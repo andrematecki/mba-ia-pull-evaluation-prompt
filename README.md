@@ -442,6 +442,18 @@ Durante os experimentos, foi identificado que parte do F1 não era recuperável 
 
 Esses casos foram mapeados e aceitos como **teto do ground truth**. Tentativas de cobri-los com instruções adicionais apenas aumentavam o ruído em Precision — cada ganho de recall custava queda em Precision. Por isso, o F1 ficou em ~0.84 e não atingiu 0.90. As demais métricas (Clarity, Precision, Helpfulness) foram aprovadas.
 
+---
+
+### Decisão de não incluir exemplos do ground truth no Few-shot
+
+Uma das formas mais diretas de elevar artificialmente as métricas seria incluir, nos exemplos Few-shot do `bug_to_user_story_v2`, os mesmos bugs e User Stories presentes no dataset de avaliação (`datasets/bug_to_user_story.jsonl`). Isso **não foi feito intencionalmente**.
+
+Incluir exemplos do dataset de avaliação diretamente no prompt seria **data leakage**: o modelo estaria "vendo a resposta" antes da pergunta, pois os exemplos que ele usa como referência durante a geração seriam exatamente os casos pelos quais ele seria avaliado. Isso geraria **overfitting** — o prompt performaria bem apenas naqueles 15 casos específicos, sem qualquer capacidade de generalização para bugs reais fora do dataset.
+
+A consequência direta dessa decisão é que **não foi possível atingir 0.9 em todas as métricas** — em especial F1 (0.83) e Correctness (0.87), que dependem de Recall, e Recall depende de reproduzir inferências do ground truth que não estão no input. A alternativa de treinar o modelo com os próprios casos de teste resolveria o número, mas invalidaria completamente a avaliação.
+
+Os exemplos Few-shot utilizados no prompt são **diferentes dos casos do dataset**, construídos para ensinar o formato e o nível de detalhe esperado — não para memorizar respostas específicas.
+
 ### Experimentos no LangSmith
 
 Cada experimento está disponível publicamente para consulta, com tracing completo de todas as execuções e o reasoning do avaliador por exemplo:

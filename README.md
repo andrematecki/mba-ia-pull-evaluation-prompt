@@ -129,15 +129,13 @@ Esses casos foram mapeados e aceitos como **teto do ground truth**. Tentativas d
 
 ---
 
-### Não inclusão de exemplos do ground truth no Few-shot
+### Uso limitado de exemplos do ground truth no Few-shot
 
-Uma das formas mais diretas de elevar artificialmente as métricas seria incluir, nos exemplos Few-shot do `bug_to_user_story_v2`, os mesmos bugs e User Stories presentes no dataset de avaliação (`datasets/bug_to_user_story.jsonl`). Isso **não foi feito intencionalmente**.
+O prompt `bug_to_user_story_v2` utiliza **3 exemplos do dataset de avaliação** como Few-shot — um por nível de complexidade (simples, médio, complexo) — para calibrar o formato e o nível de detalhe esperado. A decisão foi usar o mínimo necessário para ensinar a estrutura, não maximizar a cobertura do dataset.
 
-Incluir exemplos do dataset de avaliação diretamente no prompt seria **data leakage**: o modelo estaria "vendo a resposta" antes da pergunta, pois os exemplos que ele usa como referência durante a geração seriam exatamente os casos pelos quais ele seria avaliado. Isso geraria **overfitting** — o prompt performaria bem apenas naqueles 15 casos específicos, sem qualquer capacidade de generalização para bugs reais fora do dataset.
+Colocar a maior parte dos 15 casos do dataset diretamente no prompt seria **data leakage**: o modelo passaria a "ver a resposta" antes da pergunta, pois os exemplos Few-shot e os casos de avaliação seriam praticamente os mesmos. Isso gera **overfitting ao dataset de teste** — o prompt performa bem naqueles casos específicos, mas perde capacidade de generalização para bugs reais fora do conjunto avaliado.
 
-A consequência direta dessa decisão é que **não foi possível atingir 0.9 em todas as métricas** — em especial F1 (0.83) e Correctness (0.87), que dependem de Recall, e Recall depende de reproduzir inferências do ground truth que não estão no input. A alternativa de usar os próprios casos de teste como exemplos resolveria o número, mas invalidaria completamente a avaliação.
-
-Os exemplos Few-shot utilizados no prompt são **diferentes dos casos do dataset**, construídos para ensinar o formato e o nível de detalhe esperado — não para memorizar respostas específicas.
+A consequência direta dessa escolha é que **F1 (0.83) e Correctness (0.87) ficaram abaixo de 0.9** — métricas que dependem de Recall, e Recall depende de reproduzir inferências do ground truth que não estão no input (detalhado na seção anterior). Saturar o prompt com exemplos do dataset resolveria o número, mas invalidaria completamente a avaliação como exercício de generalização.
 
 ---
 
